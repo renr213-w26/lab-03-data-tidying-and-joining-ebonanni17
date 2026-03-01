@@ -1,52 +1,13 @@
 ---
-title: "Lab 3 - Data tidying and joining"
+title: "Lab 3 - Data Tidying and Joining"
 categories: "Lab"
+author: "Emily Bonanni"
+date: "March 1, 2026"
+format: "pdf"
 ---
 
-# Introduction
 
-In this lab you'll build the data wrangling and visualization skills you've developed so far and data tidying and joining to your repertoire.
 
-::: callout-note
-This lab assumes you've completed the labs so far and doesn't repeat setup and overview content from those labs. If you have not yet done those, you should go back and review the previous labs before starting on this one.
-:::
-
-## Learning objectives
-
-By the end of the lab, you will...
-
--   Be able to pivot/reshape data using `tidyr`
--   Continue developing your data wrangling skills using `dplyr`
--   Build on your mastery of data visualizations using `ggplot2`
--   Get more experience with data science workflow using R, RStudio, Git, and GitHub
--   Further your reproducible authoring skills with Quarto
--   Improve your familiarity with version control using Git and GitHub
-
-## Getting started
-
-Log in to RStudio, clone your `lab-3` repo from GitHub, open your `lab-3.qmd` document, and get started!
-
-::: {.callout-tip collapse="true"}
-## Click here if you prefer to see step-by-step instructions
-
-### Log in to RStudio
-
--   Go to <https://cmgr.oit.duke.edu/containers> and log in with your Duke NetID and Password.
--   Click `STA198-199` under My reservations to log into your container. You should now see the RStudio environment.
-
-### Clone the repo & start new RStudio project
-
--   Go to the course organization at [github.com/renr213](https://github.com/renr213) organization on GitHub. Click on the repo with the prefix **lab-3**. It contains the starter documents you need to complete the lab.
-
--   Click on the green **CODE** button, select **Use SSH** (this might already be selected by default, and if it is, you'll see the text **Clone with SSH**). Click on the clipboard icon to copy the repo URL.
-
--   In RStudio, go to *File* ➛ *New Project* ➛*Version Control* ➛ *Git*.
-
--   Copy and paste the URL of your assignment repo into the dialog box *Repository URL*. Again, please make sure to have *SSH* highlighted under *Clone* when you copy the address.
-
--   Click *Create Project*, and the files from your GitHub repo will be displayed in the *Files* pane in RStudio.
-
--   Click *lab-3.qmd* to open the template Quarto file. This is where you will write up your code and narrative for the lab.
 
 ### First steps
 
@@ -103,19 +64,34 @@ Get to know the data.
 
 a.  `glimpse()` at the `country_inflation` data frame and answer the following questions based on the output. How many rows does `country_inflation` have and what does each row represent? How many columns does `country_inflation` have and what does each column represent?
 
-b.  Display a list of the countries included in the dataset.
+```{r}
+glimpse(country_inflation)
+```
+There are 44 rows and 30 columns. Columns represent country and rows represent years. Each row indicates the inflation of each country in that specific year. Each column indicates the inflation of a single country for all the years listed. 
 
-::: callout-tip
-A function that can be useful for part (b) is `pull()`. Check out its documentation for examples of usage.
-:::
+b.  Display a list of the countries included in the dataset.
+```{r}
+country_inflation %>%
+  pull(country)
+```
 
 ### Question 2
 
 Which countries had the top three highest inflation rates in 2021? Your output should be a data frame with two columns, `country` and `2021`, with inflation rates in descending order, and three rows for the top three countries. Briefly comment on how the inflation rates for these countries compare to the inflation rate for United States in that year.
 
-::: callout-tip
-Column names that are numbers are not considered "proper" in R, therefore to select them you'll need to surround them with backticks, e.g. `select(` `` ` `` `1993` `` ` `` `)`.
-:::
+```{r}
+country_inflation %>%
+  select(country,`2021`) %>%
+  arrange(desc(`2021`))%>%
+  slice_head(n=3)
+```
+
+```{r}
+country_inflation %>%
+  filter(country=="United States") %>%
+  select(`2021`)
+```
+ANSWER Inflation for other 3 countries much higher 
 
 ### Question 3
 
@@ -128,6 +104,15 @@ In a single pipeline,
 Do not save this new variable in `inf_ratio`, only calculate and display it so you can answer the following question based on the output of the pipeline.
 
 Which country's inflation change is the largest over this time period? Did inflation increase of decrease between 1993 and 2021 in this country?
+
+```{r}
+country_inflation %>%
+  mutate(inf_ratio=`2021`/`1993`) %>%
+  arrange(desc(inf_ratio)) %>%
+  select(country, inf_ratio) %>%
+  print(n=Inf)
+```
+Brazil had the largest change in inlfaction , below 1 means negative change, decrease 
 
 ::: callout-tip
 For this question you'll once again need to use variables whose names are numbers (years) in your pipeline. Make sure to surround the names of such variables with backticks (`` ` ``).
@@ -143,9 +128,19 @@ Requirements:
 -   In your `pivot_*()` function, you must use `names_transform = as.numeric` as an argument to transform the variable type to numeric as you pivot the data so that in the resulting data frame the year variable is numeric.
 -   The resulting data frame must be saved as something other than `country_inflation` so you (1) can refer to this data frame later in your analysis and (2) do not overwrite `country_inflation`. Use a short but informative name.
 
-::: callout-important
-The remaining questions in Part 1 require the use of the pivoted data frame from Question 4.
-:::
+```{r}
+inf_long<-country_inflation %>%
+  pivot_longer(
+    cols = -country,
+    names_to = "year",
+    values_to = "annual_inflation",
+    names_transform = as.numeric
+  )
+  inf_long %>%
+    print(n=Inf)
+```
+3 columns, 1276 rows
+
 
 ### Question 5
 
@@ -155,37 +150,51 @@ Requirement: Your code must use the `filter()` function for each part, not `arra
 
 a.  What is the highest inflation rate observed between 1993 and 2021? The output of the pipeline should be a data frame with one row and three columns. In addition to code and output, your response should include a single sentence stating the country and year.
 
+```{r}
+inf_long%>%
+  filter(annual_inflation==max(annual_inflation, na.rm = TRUE))
+```
+ANSWER
+
 b.  What is the lowest inflation rate observed between 1993 and 2021? The output of the pipeline should be a data frame with one row and three columns. In addition to code and output, your response should include a single sentence stating the country and year.
 
+```{r}
+inf_long%>%
+  filter(annual_inflation==min(annual_inflation, na.rm = TRUE))
+```
+ANSWER
+
 c.  Putting (a) and (b) together: What are the highest and the lowest inflation rates observed between 1993 and 2021? The output of the pipeline should be a data frame with two rows and three columns.
+
+```{r}
+inf_long %>%
+  filter(annual_inflation %in% c(max(annual_inflation, na.rm = TRUE),
+                                 min(annual_inflation, na.rm = TRUE)))
+```
+ANSWER
 
 ### Question 6
 
 a\. Create a vector called `countries_of_interest` which contains the names of up tp five countries you want to visualize the inflation rates for over the years. For example, if these countries are Türkiye and United States, you can express this as follows:
 
 ```{r}
-countries_of_interest <- c("Türkiye", "United States")
+countries_of_interest <- c("Sweden", "Norway", "Denmark", "Finland", "Iceland")
 ```
 
-If they are Türkiye, United States, and China, you can express this as follows:
 
-```{r}
-countries_of_interest <- c(
-  "Türkiye", "United States", "China (People's Republic of)"
-)
-```
+Then, in 1-2 sentences, state why you chose these countries.
 
-So on and so forth... Then, in 1-2 sentences, state why you chose these countries.
-
-::: callout-note
-Your `countries_of_interest` should consist of no more than five countries. Make sure that the spelling of your countries matches how they appear in the dataset.
-:::
+Picked because they are all nordic countires and interesting to compare
 
 b\. In a single pipeline, filter your reshaped dataset to include only the `countries_of_interest` from part (a), and save the resulting data frame with a new name so you (1) can refer to this data frame later in your analysis and (2) do not overwrite the data frame you're starting with. Use a short but informative name. Then, in a new pipeline, find the `distinct()` countries in the data frame you created.
 
-::: callout-tip
-The number of distinct countries in the filtered data frame you created in part (b) should equal the number of countries you chose in part (a). If it doesn't, you might have misspelled a country name or made a mistake in how to filter for these countries. Go back and check your code.
-:::
+```{r}
+nordic_inf <- inf_long %>%
+  filter(country %in% countries_of_interest)
+
+nordic_inf %>%
+  distinct(country)
+```
 
 ### Question 7
 
@@ -198,6 +207,23 @@ Requirements for the plot:
 -   Axes and legend should be properly labeled.
 -   The plot should have an appropriate title (and optionally a subtitle).
 -   Plot should be customized in at least one way – you could use a different than default color scale, or different than default theme, or some other customization.
+
+```{r, warning=FALSE}
+ggplot(nordic_inf, aes(x = year, y = annual_inflation,
+                       color = country, shape = country)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(
+    title = "Annual Inflation in Nordic Countries (1993-2021)",
+    x = "Year",
+    y = "Annual Inflation (%)",
+    color = "Country",
+    shape = "Country"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1))
+```
+
 
 ::: render-commit-push
 If you haven't yet done so, now is a good time to render, commit, and push. Make sure that you commit and push all changed documents and your Git pane is completely empty before proceeding.
@@ -236,9 +262,26 @@ cpi_divisions <- read_csv("data/cpi-divisions.csv")
 
 a\. How many columns and how many rows does the `us_inflation` dataset have? What are the variables in it? Add a brief (1-2 sentences) narrative summarizing this information.
 
+```{r}
+glimpse(us_inflation)
+```
+
+ANSWER
+
 b\. How many columns and how many rows does the `cpi_divisions` dataset have? What are the variables in it? Add a brief (1-2 sentences) narrative summarizing this information.
 
+```{r}
+glimpse(cpi_divisions) 
+```
+ANSWER
+
 c\. Create a new dataset by joining the `us_inflation` dataset with the `cpi_division_id` dataset.
+
+```{r}
+us_inflation_full <- us_inflation %>%
+  left_join(cpi_divisions, by=c("cpi_division_id"="id"))
+```
+
 
 -   Determine which type of join is the most appropriate one and use that.
 
@@ -248,15 +291,27 @@ c\. Create a new dataset by joining the `us_inflation` dataset with the `cpi_div
 
 Then, find the number of rows and columns of the resulting dataset and report the names of its columns. Add a brief (1-2 sentences) narrative summarizing this information.
 
+ANSWER
+
 ### Question 9
 
 a\. Create a vector called `divisions_of_interest` which contains the descriptions or IDs of CPI divisions you want to visualize. Your `divisions_of_interest` should consist of no more than five divisions. If you're using descriptions, make sure that the spelling of your divisions matches how they appear in the dataset. Then, in 1-2 sentences, state why you chose these divisions.
 
-::: callout-tip
-Refer back to the guidance provided in [Question 6] if you're not sure how to create this vector.
-:::
+```{r}
+divisions_of_interest <- c(2,4,6)
+```
+
 
 b\. In a single pipeline, filter your reshaped dataset to include only the `divisions_of_interest` from part (a), and save the resulting data frame with a new name so you (1) can refer to this data frame later in your analysis and (2) do not overwrite the data frame you're starting with. Use a short but informative name. Then, in a new pipeline, find the `distinct()` divisions in the data frame you created.
+
+```{r}
+cpi_of_interest <- us_inflation_full %>%
+  filter(cpi_division_id %in% divisions_of_interest)
+
+cpi_of_interest %>%
+  distinct(description)
+```
+
 
 ### Question 10
 
@@ -270,13 +325,23 @@ Using your data frame from the previous question, create a plot of annual inflat
 -   If your legend has labels that are too long, you can try moving the legend to the bottom and stack the labels vertically. *Hint:* The `legend.position` and `legend.direction` arguments of the `theme()` functions will be useful.
 
 ```{r}
-ggplot(...) +
-  ... +
-  theme(
-    legend.position = "bottom", 
-    legend.direction = "vertical"
-  )
+ggplot(cpi_of_interest, aes(x = year, y = annual_inflation,
+                       color = description, shape = description)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(
+    title = "Annual Inflation of Three CPI Divisons in the United States (2011-2021)",
+    x = "Year",
+    y = "Annual Inflation (%)",
+    color = "CPI Divison",
+    shape = "CPI Divison"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1), 
+        legend.position = "bottom",
+        legend.direction = "vertical")
 ```
+
 
 ::: render-commit-push
 If you haven't yet done so since Part 1, now is a good time to render, commit, and push. Make sure that you commit and push all changed documents and your Git pane is completely empty before proceeding.
